@@ -14,23 +14,9 @@
 
 #define SHIFTREG_RTDM_IOC_MAGIC		's'
 
-// Config IOCTLS
-#define SHIFTREG_SET_ADDR_CONFIG  				_IOW(SHIFTREG_RTDM_IOC_MAGIC, 1, int)
-
 // Run time IOCTLS
-//#define SHIFTREG_GET_INPUT_SHIFTREG_DATA		_IOW(RPI_SHIFTREG_RTDM_IOC_MAGIC, 2, int)
-//#define SHIFTREG_SET_OUTPUT_SHIFTREG_DATA		_IOW(RPI_SHIFTREG_RTDM_IOC_MAGIC, 3, int)
-#define SHIFTREG_XFER							_IOWR(SHIFTREG_RTDM_IOC_MAGIC, 2, int)
-
-/**
- * User addresses to store shiftreg data. each address is an array
- * which is equal to the num of pins of the particular type.
- */
-struct shiftreg_addr_config_t
-{
-	uint32_t __user *user_output_pin_data;
-	uint32_t __user *user_input_pin_data;
-	uint32_t __user *user_adc_pin_data;
-};
+#define SHIFTREG_RTDM_START_RT_TASK					_IO(SHIFTREG_RTDM_IOC_MAGIC, 1)
+#define SHIFTREG_RTDM_STOP_RT_TASK					_IO(SHIFTREG_RTDM_IOC_MAGIC, 2)
+#define SHIFTREG_RTDM_WAIT_ON_RT_TASK				_IO(SHIFTREG_RTDM_IOC_MAGIC, 3)
 
 #endif //SHIFTREG_RTDM_H

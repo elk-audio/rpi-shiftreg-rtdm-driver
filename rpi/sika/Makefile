@@ -1,5 +1,5 @@
-obj-m += rpi_shiftreg_rtdm.o
-rpi_shiftreg_rtdm-objs += src/rpi_shiftreg_rtdm.o src/bcm2835.o 
+obj-m += shiftreg_rtdm.o
+shiftreg_rtdm-objs += src/rpi_shiftreg_rtdm.o src/bcm2835.o 
 SRC := $(shell pwd)
 
 all:
