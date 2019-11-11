@@ -130,6 +130,8 @@ static int rpi_shiftreg_rtdm_open(struct rtdm_fd *fd, int oflags)
 		return -ENOMEM;
 	}
 
+	memset((void*)context->pin_data, 0, PAGE_SIZE);
+
 	context->in_pin_data = context->pin_data;
 	context->out_pin_data = context->pin_data +
 				SIKA_SHIFTREG_NUM_INPUT_PINS;
@@ -379,6 +381,10 @@ static int rpi_shiftreg_rtdm_ioctl_nrt(struct rtdm_fd *fd, unsigned int request,
 			kfree(context->shiftreg_task);
 			context->shiftreg_task = NULL;
 		}
+
+		// clear any residual output shiftregisters which are ON
+		memset((void*)context->pin_data, 0, PAGE_SIZE);
+		tx_output_shiftreg_data(context);
 		break;
 
 	default:
