@@ -45,6 +45,7 @@ struct shiftreg_dev_context {
 	uint32_t *out_pin_data;
 	uint32_t *adc_pin_data;
 	uint32_t next_adc_chans_to_sample;
+	uint32_t task_period_ns;
 	rtdm_event_t irq_event;
 	rtdm_task_t *shiftreg_task;
 };
@@ -136,6 +137,8 @@ static int rpi_shiftreg_rtdm_open(struct rtdm_fd *fd, int oflags)
 				SIKA_SHIFTREG_NUM_OUTPUT_PINS;
 	context->next_adc_chans_to_sample = 0;
 
+	context->task_period_ns = SHIFTREG_RTDM_TASK_PERIOD;
+
 	context->shiftreg_task = NULL;
 	rtdm_event_init(&context->irq_event, 0);
 
@@ -225,7 +228,7 @@ static inline void rx_input_shiftreg_data(struct shiftreg_dev_context *context)
 		for(j = 7; j >= 0; j--) {
 			context->in_pin_data[pin_num] =
 					(in_shiftreg_data[i] >> j) & 0x1;
-			pin_num--; 
+			pin_num--;
 		}
 	}
 }
@@ -281,7 +284,7 @@ static inline void rpi_shiftreg_intr_handler(void *ctx)
 
 	while (!rtdm_task_should_stop()) {
 		next_wake_up_time_ns = rtdm_clock_read_monotonic() +
-					SHIFTREG_RTDM_TASK_PERIOD;
+					context->task_period_ns;
 
 		tx_output_shiftreg_data(context);
 		rx_input_shiftreg_data(context);
@@ -292,7 +295,7 @@ static inline void rpi_shiftreg_intr_handler(void *ctx)
 
 		if (exec_time_ns >= next_wake_up_time_ns) {
 			printk("Shiftreg rtdm task overshot its deadline\n");
-			rtdm_task_sleep(SHIFTREG_RTDM_TASK_PERIOD);
+			rtdm_task_sleep(context->task_period_ns);
 		}
 		else {
 			res = rtdm_task_sleep_abs(next_wake_up_time_ns,
@@ -308,6 +311,7 @@ static inline void rpi_shiftreg_intr_handler(void *ctx)
 static int rpi_shiftreg_rtdm_ioctl_rt(struct rtdm_fd *fd, unsigned int request,
 					void __user *arg)
 {
+	int task_period_ns, res;
 	struct shiftreg_dev_context *context =
 			(struct shiftreg_dev_context *)rtdm_fd_to_private(fd);
 
@@ -322,6 +326,20 @@ static int rpi_shiftreg_rtdm_ioctl_rt(struct rtdm_fd *fd, unsigned int request,
 
 	case SHIFTREG_RTDM_STOP_RT_TASK:
 		return -ENOSYS;
+		break;
+
+	case SHIFTREG_RTDM_SET_TICK_PERIOD:
+		task_period_ns = SHIFTREG_RTDM_TASK_PERIOD;
+		res = rtdm_safe_copy_from_user(fd, &task_period_ns,
+						arg, sizeof(int));
+		if(res != 0) {
+			printk("User failed to set task period. Error %d.", res);
+			return res;
+		}
+
+		context->task_period_ns = task_period_ns;
+		printk("kernel task period set to %d ns\n", task_period_ns);
+		return 0;
 		break;
 
 	default:
