@@ -5,6 +5,7 @@
 #include <linux/errno.h>
 #include <linux/string.h>
 #include <linux/gpio.h>
+#include <linux/delay.h>
 
 #include <rtdm/rtdm.h>
 #include <rtdm/driver.h>
@@ -53,6 +54,7 @@ struct shiftreg_dev_context {
 static int init_shiftreg_settings(void)
 {
 	int res;
+	uint8_t out_shiftreg_data[SIKA_SHIFTREG_NUM_OUTPUT_SHIFTREG];
 
 	bcm2835_spi_begin();
 	bcm2835_spi_setBitOrder(SIKA_SHIFTREG_SPI_BIT_ORDER);
@@ -111,6 +113,18 @@ static int init_shiftreg_settings(void)
 			SIKA_SHIFTREG_ADC_LOAD_GPIO_NUM, res);
 		return res;
 	}
+
+	// clear any existing random data on the shiftregisters
+	memset((void*)out_shiftreg_data, 0, SIKA_SHIFTREG_NUM_OUTPUT_SHIFTREG);
+
+	bcm2835_spi_chipSelect(BCM2835_SPI_CS_NONE);
+	bcm2835_spi_writenb(out_shiftreg_data,
+				SIKA_SHIFTREG_NUM_OUTPUT_SHIFTREG);
+	bcm2835_gpio_clr(SIKA_SHIFTREG_LOAD_OUT_GPIO_NUM);
+
+	msleep(1);
+
+	bcm2835_gpio_set(SIKA_SHIFTREG_LOAD_OUT_GPIO_NUM);
 
 	return 0;
 }
@@ -265,7 +279,8 @@ static inline void rx_adc_data(struct shiftreg_dev_context *context)
 
 		//readjust bits as data from adc is msb 1st
 		context->adc_pin_data[pin_num] = adc_spi_data[1] >> 4;
-		context->adc_pin_data[pin_num] |= (uint32_t)adc_spi_data[0] << 4;
+		context->adc_pin_data[pin_num] |= (uint32_t)adc_spi_data[0]
+							<< 4;
 		pin_num++;
 	}
 
@@ -335,7 +350,8 @@ static int rpi_shiftreg_rtdm_ioctl_rt(struct rtdm_fd *fd, unsigned int request,
 		res = rtdm_safe_copy_from_user(fd, &task_period_ns,
 						arg, sizeof(int));
 		if(res != 0) {
-			printk("User failed to set task period. Error %d.", res);
+			printk("User failed to set task period. Error %d.",
+				res);
 			return res;
 		}
 
@@ -420,7 +436,7 @@ static struct rtdm_device rpi_shiftreg_device = {
 };
 
 /**
- * Initializes the spi device using the bcm2835 libary, the gpios for the 
+ * Initializes the spi device using the bcm2835 libary, the gpios for the
    and shiftregisters.
  */
 static int __init rpi_shiftreg_rtdm_init(void) {
@@ -434,7 +450,6 @@ static int __init rpi_shiftreg_rtdm_init(void) {
 	}
 
 	printk("Shiftreg_rtdm: Starting Init...\n");
-	
 
 	res = bcm2835_init();
 	if (res != 1) {
@@ -460,7 +475,8 @@ static int __init rpi_shiftreg_rtdm_init(void) {
 }
 
 /**
- * This function is called when the module is unloaded. It unregisters the RTDM device.
+ * This function is called when the module is unloaded. It unregisters the
+ * RTDM device.
  */
 static void __exit rpi_shiftreg_rtdm_exit(void) {
 
