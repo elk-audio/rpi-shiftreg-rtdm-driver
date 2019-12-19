@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0
 /*
  *
  * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
@@ -525,4 +525,4 @@ module_exit(rpi_shiftreg_rtdm_exit);
 MODULE_VERSION("0.1.0");
 MODULE_DESCRIPTION("Real-Time Shiftreg driver for the Broadcom BCM283x SoC");
 MODULE_AUTHOR("Sharan Yagneswar");
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPL");
