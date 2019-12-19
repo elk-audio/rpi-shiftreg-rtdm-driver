@@ -27,7 +27,7 @@
 #include <rtdm/driver.h>
 
 #include "../include/shiftreg_rtdm.h"
-#include "../include/bcm2835.h"
+#include "../spi-bcm283x-rtdm/ksrc/bcm2835.h"
 
 #ifdef ELKPI_BOARD
 #include "../boards/elk_pi/shiftreg_defs.h"
