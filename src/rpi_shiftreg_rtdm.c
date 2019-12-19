@@ -62,7 +62,7 @@ module_param(adc_chans_per_tick, uint, 0644);
 
 // dev context
 struct shiftreg_dev_context {
-	uint32_t* pin_data;
+	uint32_t *pin_data;
 	uint32_t *in_pin_data;
 	uint32_t *out_pin_data;
 	uint32_t *adc_pin_data;
@@ -88,7 +88,7 @@ static int init_shiftreg_settings(void)
 					SHIFTREG_SPI_CS_ON_VAL);
 
 	res = gpio_request(SHIFTREG_LOAD_OUT_GPIO_NUM, "load_out_gpio");
-	if(res < 0) {
+	if (res < 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error - Failed to get load out"
 			" gpio num %d (%d)\n", SHIFTREG_LOAD_OUT_GPIO_NUM, res);
 		return res;
@@ -96,7 +96,7 @@ static int init_shiftreg_settings(void)
 
 	res = gpio_direction_output(SHIFTREG_LOAD_OUT_GPIO_NUM,
 				SHIFTREG_DISABLE_LOAD_OUT_VAL);
-	if(res < 0) {
+	if (res < 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error - Failed to set load out "
 		"gpio num %d direction (%d)\n", SHIFTREG_LOAD_OUT_GPIO_NUM,
 						res);
@@ -104,7 +104,7 @@ static int init_shiftreg_settings(void)
 	}
 
 	res = gpio_request(SHIFTREG_LOAD_IN_GPIO_NUM, "load_in_gpio");
-	if(res < 0) {
+	if (res < 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error - Failed to get load in "
 			" num %d (%d)\n", SHIFTREG_LOAD_IN_GPIO_NUM, res);
 		return res;
@@ -112,7 +112,7 @@ static int init_shiftreg_settings(void)
 
 	res = gpio_direction_output(SHIFTREG_LOAD_IN_GPIO_NUM,
 				SHIFTREG_DISABLE_LOAD_IN_VAL);
-	if(res < 0) {
+	if (res < 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error - Failed to set load in "
 			"gpio num %d direction (%d)\n",
 			SHIFTREG_LOAD_IN_GPIO_NUM, res);
@@ -120,7 +120,7 @@ static int init_shiftreg_settings(void)
 	}
 
 	res = gpio_request(SHIFTREG_ADC_LOAD_GPIO_NUM, "adc_load_gpio");
-	if(res < 0) {
+	if (res < 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error - Failed to get adc gpio"
 			" num %d (%d)\n", SHIFTREG_ADC_LOAD_GPIO_NUM, res);
 		return res;
@@ -128,7 +128,7 @@ static int init_shiftreg_settings(void)
 
 	res = gpio_direction_output(SHIFTREG_ADC_LOAD_GPIO_NUM,
 				SHIFTREG_DISABLE_ADC_LOAD_VAL);
-	if(res < 0) {
+	if (res < 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error - Failed to set adc load"
 			" gpio num %d direction (%d)\n",
 			SHIFTREG_ADC_LOAD_GPIO_NUM, res);
@@ -136,7 +136,7 @@ static int init_shiftreg_settings(void)
 	}
 
 	// clear any existing random data on the shiftregisters
-	memset((void*)out_shiftreg_data, 0, SHIFTREG_NUM_OUTPUT_SHIFTREG);
+	memset((void *)out_shiftreg_data, 0, SHIFTREG_NUM_OUTPUT_SHIFTREG);
 
 	bcm2835_spi_chipSelect(BCM2835_SPI_CS_NONE);
 	bcm2835_spi_writenb(out_shiftreg_data, SHIFTREG_NUM_OUTPUT_SHIFTREG);
@@ -154,18 +154,18 @@ static int rpi_shiftreg_rtdm_open(struct rtdm_fd *fd, int oflags)
 	struct shiftreg_dev_context *context;
 
 	printk(KERN_INFO "shiftreg_rtdm: Opening driver ...\n");
-	context = (struct shiftreg_dev_context*) rtdm_fd_to_private(fd);
+	context = (struct shiftreg_dev_context *) rtdm_fd_to_private(fd);
 
-	memset((void*)context, 0, sizeof(struct shiftreg_dev_context));
+	memset((void *)context, 0, sizeof(struct shiftreg_dev_context));
 
 	context->pin_data = kmalloc(PAGE_SIZE, GFP_USER);
-	if(context->pin_data == NULL) {
+	if (context->pin_data == NULL) {
 		printk(KERN_ERR "shiftreg_rtdm: Failed to allocate memory for "
 				"pin data\n");
 		return -ENOMEM;
 	}
 
-	memset((void*)context->pin_data, 0, PAGE_SIZE);
+	memset((void *)context->pin_data, 0, PAGE_SIZE);
 
 	context->in_pin_data = context->pin_data;
 	context->out_pin_data = context->pin_data + SHIFTREG_NUM_INPUT_PINS;
@@ -178,46 +178,47 @@ static int rpi_shiftreg_rtdm_open(struct rtdm_fd *fd, int oflags)
 	context->shiftreg_task = NULL;
 	rtdm_event_init(&context->irq_event, 0);
 
-	printk(KERN_INFO "shiftreg_rtdm: driver opened \n");
+	printk(KERN_INFO "shiftreg_rtdm: driver opened\n");
 	return 0;
 }
 
 static void rpi_shiftreg_rtdm_close(struct rtdm_fd *fd)
 {
 	struct shiftreg_dev_context *context;
-	context = (struct shiftreg_dev_context*) rtdm_fd_to_private(fd);
+
+	context = (struct shiftreg_dev_context *) rtdm_fd_to_private(fd);
 
 	if (context->shiftreg_task) {
 		rtdm_event_destroy(&context->irq_event);
 		rtdm_task_destroy(context->shiftreg_task);
 		kfree(context->shiftreg_task);
 	}
-	if(context->pin_data != NULL)
+	if (context->pin_data != NULL)
 		kfree(context->pin_data);
 
 	printk(KERN_INFO "shiftreg_rtdm: driver closed\n");
-	return;
 }
 
 static int rpi_shiftreg_mmap_nrt(struct rtdm_fd *fd, struct vm_area_struct *vma)
 {
 	struct shiftreg_dev_context *context;
-	context = (struct shiftreg_dev_context*) rtdm_fd_to_private(fd);
+	context = (struct shiftreg_dev_context *) rtdm_fd_to_private(fd);
+
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	return rtdm_mmap_kmem(vma, context->pin_data);
 }
 
 static inline void tx_output_shiftreg_data(struct shiftreg_dev_context *context)
 {
-	int i,j, pin_num;
+	int i, j, pin_num;
 	uint32_t interleaved_val;
 	uint8_t out_shiftreg_data[SHIFTREG_NUM_OUTPUT_SHIFTREG];
 
 	// interleave
 	pin_num = SHIFTREG_NUM_OUTPUT_PINS - 1;
-	for(i = 0; i < SHIFTREG_NUM_OUTPUT_SHIFTREG; i++) {
+	for (i = 0; i < SHIFTREG_NUM_OUTPUT_SHIFTREG; i++) {
 		out_shiftreg_data[i] = 0;
-		for(j = 7; j >= 0; j--) {
+		for (j = 7; j >= 0; j--) {
 			interleaved_val = context->out_pin_data[pin_num] << j;
 			out_shiftreg_data[i] |= interleaved_val;
 			pin_num--;
@@ -258,8 +259,8 @@ static inline void rx_input_shiftreg_data(struct shiftreg_dev_context *context)
 
 	// deinterleave
 	pin_num = SHIFTREG_NUM_INPUT_PINS - 1;
-	for(i = 0; i < SHIFTREG_NUM_INPUT_SHIFTREG; i++) {
-		for(j = 7; j >= 0; j--) {
+	for (i = 0; i < SHIFTREG_NUM_INPUT_SHIFTREG; i++) {
+		for (j = 7; j >= 0; j--) {
 			context->in_pin_data[pin_num] =
 					(in_shiftreg_data[i] >> j) & 0x1;
 			pin_num--;
@@ -279,7 +280,7 @@ static inline void rx_adc_data(struct shiftreg_dev_context *context)
 	next_pin_num = pin_num + SHIFTREG_ADC_CHANS_PER_TICK;
 
 
-	while(pin_num < next_pin_num) {
+	while (pin_num < next_pin_num) {
 		mux_ctrl_shiftreg_data = pin_num;
 
 		bcm2835_spi_writenb(&mux_ctrl_shiftreg_data, 1);
@@ -301,7 +302,7 @@ static inline void rx_adc_data(struct shiftreg_dev_context *context)
 		pin_num++;
 	}
 
-	if(next_pin_num == SHIFTREG_NUM_ADC_PINS)
+	if (next_pin_num == SHIFTREG_NUM_ADC_PINS)
 		next_pin_num = 0;
 
 	context->next_adc_chans_to_sample = next_pin_num;
@@ -331,11 +332,10 @@ static inline void rpi_shiftreg_intr_handler(void *ctx)
 			printk(KERN_INFO "shiftreg_rtdm: rt task overshot its"
 					"deadline\n");
 			rtdm_task_sleep(context->task_period_ns);
-		}
-		else {
+		} else {
 			res = rtdm_task_sleep_abs(next_wake_up_time_ns,
 						RTDM_TIMERMODE_ABSOLUTE);
-			if(res != 0) {
+			if (res != 0) {
 				printk(KERN_ERR "shiftreg_rtdm: "
 				"rtdm_task_sleep_abs failed Error code: %d\n",
 				res);
@@ -351,24 +351,21 @@ static int rpi_shiftreg_rtdm_ioctl_rt(struct rtdm_fd *fd, unsigned int request,
 	struct shiftreg_dev_context *context =
 			(struct shiftreg_dev_context *)rtdm_fd_to_private(fd);
 
-	switch(request) {
+	switch (request) {
 	case SHIFTREG_RTDM_WAIT_ON_RT_TASK:
 		return rtdm_event_wait(&context->irq_event);
-		break;
 
 	case SHIFTREG_RTDM_START_RT_TASK:
 		return -ENOSYS;
-		break;
 
 	case SHIFTREG_RTDM_STOP_RT_TASK:
 		return -ENOSYS;
-		break;
 
 	case SHIFTREG_RTDM_SET_TICK_PERIOD:
 		task_period_ns = SHIFTREG_RTDM_TASK_PERIOD;
 		res = rtdm_safe_copy_from_user(fd, &task_period_ns,
 						arg, sizeof(int));
-		if(res != 0) {
+		if (res != 0) {
 			printk(KERN_ERR "shiftreg_rtdm: User failed to set task"
 				" period. Error %d.\n", res);
 			return res;
@@ -378,7 +375,6 @@ static int rpi_shiftreg_rtdm_ioctl_rt(struct rtdm_fd *fd, unsigned int request,
 		printk(KERN_INFO "shiftreg_rtdm: kernel task period set to %d"
 				" ns\n", task_period_ns);
 		return 0;
-		break;
 
 	default:
 		printk(KERN_WARNING "shiftreg_rtdm : shiftreg_ioctl_rt: "
@@ -396,9 +392,9 @@ static int rpi_shiftreg_rtdm_ioctl_nrt(struct rtdm_fd *fd, unsigned int request,
 			(struct shiftreg_dev_context *)rtdm_fd_to_private(fd);
 	int result = 0;
 
-	switch(request) {
+	switch (request) {
 	case SHIFTREG_RTDM_START_RT_TASK:
-		context->shiftreg_task = kcalloc(1,sizeof(rtdm_task_t),
+		context->shiftreg_task = kcalloc(1, sizeof(rtdm_task_t),
 							GFP_KERNEL);
 		result = rtdm_task_init(context->shiftreg_task,
 					"shiftreg_rtdm_driver_task",
@@ -420,7 +416,7 @@ static int rpi_shiftreg_rtdm_ioctl_nrt(struct rtdm_fd *fd, unsigned int request,
 		}
 
 		// clear any residual output shiftregisters which are ON
-		memset((void*)context->pin_data, 0, PAGE_SIZE);
+		memset((void *)context->pin_data, 0, PAGE_SIZE);
 		tx_output_shiftreg_data(context);
 		break;
 
@@ -460,7 +456,8 @@ static struct rtdm_device rpi_shiftreg_device = {
  * Initializes the spi device using the bcm2835 libary, the gpios for the
    and shiftregisters.
  */
-static int __init rpi_shiftreg_rtdm_init(void) {
+static int __init rpi_shiftreg_rtdm_init(void)
+{
 
 	int res;
 
@@ -480,14 +477,14 @@ static int __init rpi_shiftreg_rtdm_init(void) {
 	}
 
 	res = init_shiftreg_settings();
-	if(res != 0) {
+	if (res != 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Failed to init shiftreg"
 		" settings (%d).\n", res);
 		return res;
 	}
 
 	res = rtdm_dev_register(&rpi_shiftreg_device);
-	if(res != 0) {
+	if (res != 0) {
 		rtdm_dev_unregister(&rpi_shiftreg_device);
 		printk(KERN_ERR "shiftreg_rtdm: Failed to init driver (%d).\n",
 				res);
@@ -501,7 +498,8 @@ static int __init rpi_shiftreg_rtdm_init(void) {
  * This function is called when the module is unloaded. It unregisters the
  * RTDM device.
  */
-static void __exit rpi_shiftreg_rtdm_exit(void) {
+static void __exit rpi_shiftreg_rtdm_exit(void)
+{
 
 	printk(KERN_INFO "shiftreg_rtdm: Exiting driver\n");
 
