@@ -1,3 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ *
+ * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
+ * Author(s): Sharan Yagneswar <sharan@elk.audio>
+ *            Nitin Kulkarni <nitin@elk.audio>
+ *
+ * Rtdm Driver for controlling shiftregister based gpio
+ *
+ * Based on spi-bcm283x-rtdm by Nicolas Schurando :
+ * https://github.com/nicolas-schurando/spi-bcm283x-rtdm
+ *
+ * Credits to Mike McCauley's user space library to access bcm2835 peripherals :
+ * http://www.airspayce.com/mikem/bcm2835/.
+ */
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/printk.h>

@@ -1,3 +1,12 @@
+/*
+ *
+ * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
+ * Author(s): Sharan Yagneswar <sharan@elk.audio>
+ *            Nitin Kulkarni <nitin@elk.audio>
+ *
+ * Shiftregister definitions for Elk Pi boards
+ *
+ */
 #ifndef SHIFTREG_DEFS_H_
 #define SHIFTREG_DEFS_H_
 
