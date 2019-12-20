@@ -1,0 +1,3 @@
+[submodule "spi-bcm283x-rtdm"]
+	path = spi-bcm283x-rtdm
+	url = https://github.com/nicolas-schurando/spi-bcm283x-rtdm.git
