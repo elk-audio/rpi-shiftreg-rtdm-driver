@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- *
  * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
  *
- * Shiftregister definitions for Elk Pi boards
+ * Defitions which describe input shiftregisters SN74HC165,output shift
+ * registers SN74HC595, adc ADS7041 and the hardware configuration and layout of
+ * the ElkPi hat for the raspberry pi.
  *
+ *
+ * The schematic for the ElkPi Hat can be found here:
+ * https://github.com/elk-audio/elk-pi-hardware/blob/master/ElkPi_schematics.pdf
+ *
+ * Data sheets for the shift registers and adc:
+ * http://www.ti.com/lit/ds/symlink/sn74hc595.pdf
+ * http://www.ti.com/lit/ds/symlink/sn74hc165.pdf
+ * http://www.ti.com/lit/ds/symlink/ads7041.pdf
  */
 #ifndef SHIFTREG_DEFS_H_
 #define SHIFTREG_DEFS_H_
