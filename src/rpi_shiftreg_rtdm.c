@@ -151,7 +151,6 @@ static int rpi_shiftreg_rtdm_open(struct rtdm_fd *fd, int oflags)
 {
 	struct shiftreg_dev_context *context;
 
-	printk(KERN_INFO "shiftreg_rtdm: Opening driver ...\n");
 	context = (struct shiftreg_dev_context *) rtdm_fd_to_private(fd);
 
 	memset((void *)context, 0, sizeof(struct shiftreg_dev_context));
