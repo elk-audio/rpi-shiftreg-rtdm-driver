@@ -522,5 +522,5 @@ module_exit(rpi_shiftreg_rtdm_exit);
  */
 MODULE_VERSION("0.1.0");
 MODULE_DESCRIPTION("Real-Time Shiftreg driver for the Broadcom BCM283x SoC");
-MODULE_AUTHOR("Sharan Yagneswar");
+MODULE_AUTHOR("Sharan Yagneswar <sharan@elk.audio>");
 MODULE_LICENSE("GPL");
