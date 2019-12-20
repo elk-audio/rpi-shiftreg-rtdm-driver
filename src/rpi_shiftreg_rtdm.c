@@ -2,8 +2,6 @@
 /*
  *
  * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
- * Author(s): Sharan Yagneswar <sharan@elk.audio>
- *            Nitin Kulkarni <nitin@elk.audio>
  *
  * Rtdm Driver for controlling shiftregister based gpio
  *
