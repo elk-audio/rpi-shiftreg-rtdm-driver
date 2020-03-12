@@ -25,7 +25,7 @@
 #include <rtdm/driver.h>
 
 #include "../include/shiftreg_rtdm.h"
-#include "../spi-bcm283x-rtdm/ksrc/bcm2835.h"
+#include "bcm2835_periph.h"
 
 #ifdef ELKPI_BOARD
 #include "../boards/elk_pi/shiftreg_defs.h"
@@ -75,14 +75,13 @@ static int init_shiftreg_settings(void)
 	int res;
 	uint8_t out_shiftreg_data[SHIFTREG_NUM_OUTPUT_SHIFTREG];
 
-	bcm2835_spi_begin();
-	bcm2835_spi_setBitOrder(SHIFTREG_SPI_BIT_ORDER);
-	bcm2835_spi_setDataMode(SHIFTREG_SPI_DATA_MODE);
-	bcm2835_spi_setClockDivider(SHIFTREG_SPI_CLOCK_DIV);
-	bcm2835_spi_chipSelect(BCM2835_SPI_CS_NONE);
-	bcm2835_spi_setChipSelectPolarity(SHIFTREG_INPUT_SHIFTREG_CS,
+	bcm283x_spi_begin();
+	bcm283x_spi_set_data_mode(SHIFTREG_SPI_DATA_MODE);
+	bcm283x_spi_set_clock_div(SHIFTREG_SPI_CLOCK_DIV);
+	bcm283x_spi_chip_sel(BCM283X_SPI_CS_NONE);
+	bcm283x_spi_set_chip_sel_pol(SHIFTREG_INPUT_SHIFTREG_CS,
 					SHIFTREG_SPI_CS_ON_VAL);
-	bcm2835_spi_setChipSelectPolarity(SHIFTREG_ADC_CS,
+	bcm283x_spi_set_chip_sel_pol(SHIFTREG_ADC_CS,
 					SHIFTREG_SPI_CS_ON_VAL);
 
 	res = gpio_request(SHIFTREG_LOAD_OUT_GPIO_NUM, "load_out_gpio");
@@ -136,13 +135,15 @@ static int init_shiftreg_settings(void)
 	// clear any existing random data on the shiftregisters
 	memset((void *)out_shiftreg_data, 0, SHIFTREG_NUM_OUTPUT_SHIFTREG);
 
-	bcm2835_spi_chipSelect(BCM2835_SPI_CS_NONE);
-	bcm2835_spi_writenb(out_shiftreg_data, SHIFTREG_NUM_OUTPUT_SHIFTREG);
-	bcm2835_gpio_clr(SHIFTREG_LOAD_OUT_GPIO_NUM);
+	bcm283x_spi_chip_sel(BCM283X_SPI_CS_NONE);
+	bcm283x_spi_write_bytes_polling(out_shiftreg_data,
+					SHIFTREG_NUM_OUTPUT_SHIFTREG);
+
+	bcm283x_gpio_clr(SHIFTREG_LOAD_OUT_GPIO_NUM);
 
 	msleep(1);
 
-	bcm2835_gpio_set(SHIFTREG_LOAD_OUT_GPIO_NUM);
+	bcm283x_gpio_set(SHIFTREG_LOAD_OUT_GPIO_NUM);
 
 	return 0;
 }
@@ -224,14 +225,15 @@ static inline void tx_output_shiftreg_data(struct shiftreg_dev_context *context)
 
 
 	// output shiftregisters do not have a chipselect
-	bcm2835_spi_chipSelect(BCM2835_SPI_CS_NONE);
-	bcm2835_spi_writenb(out_shiftreg_data, SHIFTREG_NUM_OUTPUT_SHIFTREG);
+	bcm283x_spi_chip_sel(BCM283X_SPI_CS_NONE);
+	bcm283x_spi_write_bytes_polling(out_shiftreg_data,
+					SHIFTREG_NUM_OUTPUT_SHIFTREG);
 
-	bcm2835_gpio_clr(SHIFTREG_LOAD_OUT_GPIO_NUM);
+	bcm283x_gpio_clr(SHIFTREG_LOAD_OUT_GPIO_NUM);
 
 	rtdm_task_sleep(SHIFTREG_LOAD_OUT_PERIOD_NS);
 
-	bcm2835_gpio_set(SHIFTREG_LOAD_OUT_GPIO_NUM);
+	bcm283x_gpio_set(SHIFTREG_LOAD_OUT_GPIO_NUM);
 }
 
 static inline void rx_input_shiftreg_data(struct shiftreg_dev_context *context)
@@ -240,19 +242,19 @@ static inline void rx_input_shiftreg_data(struct shiftreg_dev_context *context)
 	uint8_t in_shiftreg_data[SHIFTREG_NUM_INPUT_SHIFTREG];
 
 	// load in gpio
-	bcm2835_gpio_clr(SHIFTREG_LOAD_IN_GPIO_NUM);
+	bcm283x_gpio_clr(SHIFTREG_LOAD_IN_GPIO_NUM);
 
 	rtdm_task_sleep(SHIFTREG_LOAD_IN_PERIOD_NS);
 
-	bcm2835_gpio_set(SHIFTREG_LOAD_IN_GPIO_NUM);
+	bcm283x_gpio_set(SHIFTREG_LOAD_IN_GPIO_NUM);
 
 	rtdm_task_sleep(SHIFTREG_LOAD_IN_PERIOD_NS);
 
 	// select chipselect for in shift regs
-	bcm2835_spi_chipSelect(SHIFTREG_INPUT_SHIFTREG_CS);
+	bcm283x_spi_chip_sel(SHIFTREG_INPUT_SHIFTREG_CS);
 
 	// perform rx
-	bcm2835_spi_transfern(in_shiftreg_data, SHIFTREG_NUM_INPUT_SHIFTREG);
+	bcm283x_spi_read_bytes_polling(in_shiftreg_data, SHIFTREG_NUM_INPUT_SHIFTREG);
 
 	// deinterleave
 	pin_num = SHIFTREG_NUM_INPUT_PINS - 1;
@@ -272,7 +274,7 @@ static inline void rx_adc_data(struct shiftreg_dev_context *context)
 	uint32_t pin_num;
 	uint32_t next_pin_num;
 
-	bcm2835_spi_chipSelect(SHIFTREG_ADC_CS);
+	bcm283x_spi_chip_sel(SHIFTREG_ADC_CS);
 	pin_num = context->next_adc_chans_to_sample;
 	next_pin_num = pin_num + SHIFTREG_ADC_CHANS_PER_TICK;
 
@@ -280,17 +282,18 @@ static inline void rx_adc_data(struct shiftreg_dev_context *context)
 	while (pin_num < next_pin_num) {
 		mux_ctrl_shiftreg_data = pin_num;
 
-		bcm2835_spi_writenb(&mux_ctrl_shiftreg_data, 1);
+		bcm283x_spi_write_bytes_polling(&mux_ctrl_shiftreg_data, 1);
 
-		bcm2835_gpio_clr(SHIFTREG_ADC_LOAD_GPIO_NUM);
+		bcm283x_gpio_clr(SHIFTREG_ADC_LOAD_GPIO_NUM);
 
 		rtdm_task_sleep(SHIFTREG_ADC_LOAD_PERIOD_NS);
 
-		bcm2835_gpio_set(SHIFTREG_ADC_LOAD_GPIO_NUM);
+		bcm283x_gpio_set(SHIFTREG_ADC_LOAD_GPIO_NUM);
 
 		rtdm_task_sleep(SHIFTREG_ADC_ACQ_PERIOD_NS);
 
-		bcm2835_spi_transfern(adc_spi_data, SHIFTREG_ADC_SPI_LEN_BYTES);
+		bcm283x_spi_read_bytes_polling(adc_spi_data,
+						SHIFTREG_ADC_SPI_LEN_BYTES);
 
 		//readjust bits as data from adc is msb 1st
 		context->adc_pin_data[pin_num] = adc_spi_data[1] >> 4;
@@ -466,8 +469,8 @@ static int __init rpi_shiftreg_rtdm_init(void)
 
 	printk(KERN_INFO "shiftreg_rtdm: Starting Init...\n");
 
-	res = bcm2835_init();
-	if (res != 1) {
+	res = bcm283x_periph_init();
+	if (res != 0) {
 		printk(KERN_ERR "shiftreg_rtdm: Error in bcm2835_init "
 				"(%d).\n", res);
 		return res;
@@ -502,8 +505,8 @@ static void __exit rpi_shiftreg_rtdm_exit(void)
 
 	rtdm_dev_unregister(&rpi_shiftreg_device);
 
-	bcm2835_spi_end();
-	bcm2835_close();
+	bcm283x_spi_end();
+	bcm283x_periph_close();
 
 	gpio_free(SHIFTREG_LOAD_OUT_GPIO_NUM);
 	gpio_free(SHIFTREG_LOAD_IN_GPIO_NUM);

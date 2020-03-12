@@ -1,5 +1,5 @@
 obj-m += shiftreg_rtdm.o
-shiftreg_rtdm-objs += ../../src/rpi_shiftreg_rtdm.o ../../spi-bcm283x-rtdm/ksrc/bcm2835.o
+shiftreg_rtdm-objs += ../../src/rpi_shiftreg_rtdm.o ../../src/bcm2835_periph.o
 ccflags-y := -DELKPI_BOARD
 SRC := $(shell pwd)
 
