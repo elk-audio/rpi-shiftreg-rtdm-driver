@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
+ *
+ * Helper library which allows for low level access to the bcm2835 and bcm2838
+ * SPI0 peripherals. This library is heavily based on and inspired by the
+ * bcm2835 peripheral library by Mike McCauley's found here:
+ * https://www.airspayce.com/mikem/bcm2835/
+ */
 #include <linux/of.h>
 #include <linux/string.h>
 #include <linux/errno.h>
@@ -56,7 +65,6 @@
 
 
 /*--------  Global variables  --------*/
-
 static uint32_t *peripherals_base_addr = NULL;
 static uint32_t peripherals_mem_size = 0;
 uint32_t *peripherals_addr = NULL;
@@ -67,7 +75,6 @@ static uint32_t *spi_0_chip_sel_reg = NULL;
 static uint32_t *spi_0_fifo_reg = NULL;
 static uint32_t *spi_0_clk_reg = NULL;
 static uint32_t *bcm283x_gpio_addr = NULL;
-
 
 /*--------  Local helper functions  --------*/
 
@@ -167,7 +174,8 @@ int bcm283x_periph_init(void)
 	peripherals_addr = ioremap((phys_addr_t) peripherals_base_addr,
 					peripherals_mem_size);
 	if(peripherals_addr == NULL) {
-		printk(KERN_ERR "bcm283x_periph; Failed to ioremap peripherals\n");
+		printk(KERN_ERR "bcm283x_periph; Failed to " \
+			" ioremap peripherals\n");
 		return -ENOMEM;
 	}
 
@@ -262,7 +270,8 @@ void bcm283x_spi_write_bytes_polling(uint8_t* buf, uint32_t len)
 		*spi_0_fifo_reg = buf[i];
 
 		// read and discard incoming data
-		while(bcm283x_read_reg(spi_0_chip_sel_reg) & BCM283X_SPI0_RXD_MASK) {
+		while(bcm283x_read_reg(spi_0_chip_sel_reg) &
+			BCM283X_SPI0_RXD_MASK) {
 			rx_data = *spi_0_fifo_reg;
 		}
 	}
