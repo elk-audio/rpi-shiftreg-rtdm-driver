@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2019 Modern Ancient Instruments Networked AB, dba Elk Stockholm
  *
@@ -75,7 +75,7 @@ void bcm283x_spi_set_data_mode(uint8_t mode);
  * @param buf The buffer with the data
  * @param len The num of bytes to send
  */
-void bcm283x_spi_write_bytes_polling(uint8_t* buf, uint32_t len);
+void bcm283x_spi_write_bytes_polling(uint8_t *buf, uint32_t len);
 
 /**
  * @brief Read byte data from the SPI by polling method
@@ -83,7 +83,7 @@ void bcm283x_spi_write_bytes_polling(uint8_t* buf, uint32_t len);
  * @param buf The buffer to store the incoming data
  * @param len The num of bytes to store
  */
-void bcm283x_spi_read_bytes_polling(uint8_t* buf, uint32_t len);
+void bcm283x_spi_read_bytes_polling(uint8_t *buf, uint32_t len);
 
 /**
  * @brief Set a RPI B+ Pin

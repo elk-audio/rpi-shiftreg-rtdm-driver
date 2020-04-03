@@ -200,6 +200,7 @@ static void rpi_shiftreg_rtdm_close(struct rtdm_fd *fd)
 static int rpi_shiftreg_mmap_nrt(struct rtdm_fd *fd, struct vm_area_struct *vma)
 {
 	struct shiftreg_dev_context *context;
+
 	context = (struct shiftreg_dev_context *) rtdm_fd_to_private(fd);
 
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
@@ -254,7 +255,8 @@ static inline void rx_input_shiftreg_data(struct shiftreg_dev_context *context)
 	bcm283x_spi_chip_sel(SHIFTREG_INPUT_SHIFTREG_CS);
 
 	// perform rx
-	bcm283x_spi_read_bytes_polling(in_shiftreg_data, SHIFTREG_NUM_INPUT_SHIFTREG);
+	bcm283x_spi_read_bytes_polling(in_shiftreg_data,
+					SHIFTREG_NUM_INPUT_SHIFTREG);
 
 	// deinterleave
 	pin_num = SHIFTREG_NUM_INPUT_PINS - 1;
@@ -330,7 +332,7 @@ static inline void rpi_shiftreg_intr_handler(void *ctx)
 
 		if (exec_time_ns >= next_wake_up_time_ns) {
 			printk(KERN_INFO "shiftreg_rtdm: rt task overshot its"
-					"deadline\n");
+					" deadline\n");
 			rtdm_task_sleep(context->task_period_ns);
 		} else {
 			res = rtdm_task_sleep_abs(next_wake_up_time_ns,

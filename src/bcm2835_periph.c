@@ -65,16 +65,15 @@
 
 
 /*--------  Global variables  --------*/
-static uint32_t *peripherals_base_addr = NULL;
-static uint32_t peripherals_mem_size = 0;
-uint32_t *peripherals_addr = NULL;
-static bool pud_type_rpi4 = false;
+static uint32_t *peripherals_base_addr;
+static uint32_t peripherals_mem_size;
+static uint32_t *peripherals_addr;
 
-static uint32_t *spi_0_base_addr = NULL;
-static uint32_t *spi_0_chip_sel_reg = NULL;
-static uint32_t *spi_0_fifo_reg = NULL;
-static uint32_t *spi_0_clk_reg = NULL;
-static uint32_t *bcm283x_gpio_addr = NULL;
+static uint32_t *spi_0_base_addr;
+static uint32_t *spi_0_chip_sel_reg;
+static uint32_t *spi_0_fifo_reg;
+static uint32_t *spi_0_clk_reg;
+static uint32_t *bcm283x_gpio_addr;
 
 /*--------  Local helper functions  --------*/
 
@@ -87,6 +86,7 @@ static uint32_t *bcm283x_gpio_addr = NULL;
 static inline uint32_t bcm283x_read_reg(volatile uint32_t *reg_addr)
 {
 	uint32_t reg_val;
+
 	__sync_synchronize();
 	reg_val = *reg_addr;
 	__sync_synchronize();
@@ -115,7 +115,7 @@ static inline void bcm283x_write_reg(volatile uint32_t *reg_addr,
  * @param val the value of the bit
  * @param mask the mask for the bit
  */
-static inline void bcm283x_set_bits(volatile uint32_t* reg_addr, uint32_t val,
+static inline void bcm283x_set_bits(volatile uint32_t *reg_addr, uint32_t val,
 					uint32_t mask)
 {
 	uint32_t reg_val;
@@ -134,7 +134,7 @@ static inline void bcm283x_set_bits(volatile uint32_t* reg_addr, uint32_t val,
  */
 static inline void bcm283x_gpio_fsel(uint8_t pin, uint8_t mode)
 {
-	volatile uint32_t* reg_addr;
+	volatile uint32_t *reg_addr;
 	uint8_t shift;
 	uint32_t mask;
 	uint32_t value;
@@ -150,21 +150,28 @@ static inline void bcm283x_gpio_fsel(uint8_t pin, uint8_t mode)
 int bcm283x_periph_init(void)
 {
 	struct device_node *dtnode;
-	char* full_model_name;
+	char *full_model_name;
+
+	// initialize statics
+	peripherals_mem_size = 0;
+	peripherals_base_addr = NULL;
+	peripherals_addr = NULL;
+	spi_0_base_addr = NULL;
+	spi_0_chip_sel_reg = NULL;
+	spi_0_fifo_reg = NULL;
+	spi_0_clk_reg = NULL;
+	bcm283x_gpio_addr = NULL;
 
 	dtnode = of_find_node_by_path("/");
-	full_model_name = (char*) of_get_property(dtnode, "model", NULL);
+	full_model_name = (char *) of_get_property(dtnode, "model", NULL);
 
 	if (strstr(full_model_name, RPI_4_MODEL_NAME) != NULL) {
-		peripherals_base_addr = (uint32_t*) BCM2835_RPI4_PERI_BASE;
+		peripherals_base_addr = (uint32_t *) BCM2835_RPI4_PERI_BASE;
 		peripherals_mem_size = BCM2835_RPI4_PERI_SIZE;
-		pud_type_rpi4 = true;
-	}
-	else if (strstr(full_model_name, RPI_3_MODEL_NAME) != NULL) {
-		peripherals_base_addr = (uint32_t*) BCM2835_RPI3_PERI_BASE;
+	} else if (strstr(full_model_name, RPI_3_MODEL_NAME) != NULL) {
+		peripherals_base_addr = (uint32_t *) BCM2835_RPI3_PERI_BASE;
 		peripherals_mem_size = BCM2835_RPI3_PERI_SIZE;
-	}
-	else {
+	} else {
 		printk(KERN_ERR "bcm283x_periph: Incompatible RPI model %s!\n",
 							full_model_name);
 		return -ENODEV;
@@ -173,7 +180,7 @@ int bcm283x_periph_init(void)
 	// remap peripheral address space into kernel virtual address
 	peripherals_addr = ioremap((phys_addr_t) peripherals_base_addr,
 					peripherals_mem_size);
-	if(peripherals_addr == NULL) {
+	if (peripherals_addr == NULL) {
 		printk(KERN_ERR "bcm283x_periph; Failed to " \
 			" ioremap peripherals\n");
 		return -ENOMEM;
@@ -196,12 +203,11 @@ void bcm283x_periph_close(void)
 	iounmap(peripherals_addr);
 	peripherals_base_addr = NULL;
 	peripherals_mem_size = 0;
-	pud_type_rpi4 = false;
 	spi_0_base_addr = NULL;
 	bcm283x_gpio_addr = NULL;
 }
 
-void bcm283x_spi_begin()
+void bcm283x_spi_begin(void)
 {
 	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_26, BCM283X_GPIO_FSEL_ALT0); // CS1
 	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_24, BCM283X_GPIO_FSEL_ALT0); // CS0
@@ -217,12 +223,12 @@ void bcm283x_spi_begin()
 
 void bcm283x_spi_end(void)
 {
-    // Set all the SPI0 pins back to input
-    bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_26, BCM283X_GPIO_FSEL_INPT); /* CE1 */
-    bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_24, BCM283X_GPIO_FSEL_INPT); /* CE0 */
-    bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_21, BCM283X_GPIO_FSEL_INPT); /* MISO */
-    bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_19, BCM283X_GPIO_FSEL_INPT); /* MOSI */
-    bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_23, BCM283X_GPIO_FSEL_INPT); /* CLK */
+	// Set all the SPI0 pins back to input
+	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_26, BCM283X_GPIO_FSEL_INPT); // CE1
+	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_24, BCM283X_GPIO_FSEL_INPT); // CE0
+	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_21, BCM283X_GPIO_FSEL_INPT); // MISO
+	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_19, BCM283X_GPIO_FSEL_INPT); // MOSI
+	bcm283x_gpio_fsel(RPI_BPLUS_GPIO_J8_23, BCM283X_GPIO_FSEL_INPT); // CLK
 }
 
 void bcm283x_spi_set_clock_div(uint16_t divider_val)
@@ -244,11 +250,12 @@ void bcm283x_spi_set_data_mode(uint8_t mode)
 void bcm283x_spi_set_chip_sel_pol(uint8_t chip_sel, uint8_t enable_val)
 {
 	uint8_t shift;
+
 	shift = 21 + chip_sel;
 	bcm283x_set_bits(spi_0_chip_sel_reg, enable_val << shift, 1 << shift);
 }
 
-void bcm283x_spi_write_bytes_polling(uint8_t* buf, uint32_t len)
+void bcm283x_spi_write_bytes_polling(uint8_t *buf, uint32_t len)
 {
 	uint32_t i;
 	volatile uint32_t rx_data;
@@ -263,22 +270,23 @@ void bcm283x_spi_write_bytes_polling(uint8_t* buf, uint32_t len)
 
 	for (i = 0; i < len; i++) {
 		// wait for tx fifo to accept data
-		while(!(bcm283x_read_reg(spi_0_chip_sel_reg) &
-			BCM283X_SPI0_TXD_MASK));
+		while (!(bcm283x_read_reg(spi_0_chip_sel_reg) &
+			BCM283X_SPI0_TXD_MASK))
+			;
 
 		// write to fifo
 		*spi_0_fifo_reg = buf[i];
 
 		// read and discard incoming data
-		while(bcm283x_read_reg(spi_0_chip_sel_reg) &
+		while (bcm283x_read_reg(spi_0_chip_sel_reg) &
 			BCM283X_SPI0_RXD_MASK) {
 			rx_data = *spi_0_fifo_reg;
 		}
 	}
 
 	// wait for done flag to be set
-	while(!(*spi_0_chip_sel_reg & BCM283X_SPI0_DONE_MASK))
-		while(bcm283x_read_reg(spi_0_chip_sel_reg) &
+	while (!(*spi_0_chip_sel_reg & BCM283X_SPI0_DONE_MASK))
+		while (bcm283x_read_reg(spi_0_chip_sel_reg) &
 			BCM283X_SPI0_RXD_MASK)
 				rx_data = *spi_0_fifo_reg;
 
@@ -286,7 +294,7 @@ void bcm283x_spi_write_bytes_polling(uint8_t* buf, uint32_t len)
 			BCM283X_SPI0_TA_MASK);
 }
 
-void bcm283x_spi_read_bytes_polling(uint8_t* buf, uint32_t len)
+void bcm283x_spi_read_bytes_polling(uint8_t *buf, uint32_t len)
 {
 	int num_tx_bytes_sent;
 	int num_rx_bytes_recvd;
@@ -301,22 +309,23 @@ void bcm283x_spi_read_bytes_polling(uint8_t* buf, uint32_t len)
 
 	num_tx_bytes_sent = 0;
 	num_rx_bytes_recvd = 0;
-	while(num_rx_bytes_recvd < len) {
-		while((bcm283x_read_reg(spi_0_chip_sel_reg) &
+	while (num_rx_bytes_recvd < len) {
+		while ((bcm283x_read_reg(spi_0_chip_sel_reg) &
 			BCM283X_SPI0_TXD_MASK) && (num_tx_bytes_sent < len)) {
 				*spi_0_fifo_reg = 0;
 				num_tx_bytes_sent++;
 			}
 
-		while((bcm283x_read_reg(spi_0_chip_sel_reg) &
+		while ((bcm283x_read_reg(spi_0_chip_sel_reg) &
 			BCM283X_SPI0_RXD_MASK) && (num_rx_bytes_recvd < len)) {
 				buf[num_rx_bytes_recvd] = *spi_0_fifo_reg;
 				num_rx_bytes_recvd++;
 			}
 	}
 
-	// wait for done flag to be set
-	while(!(*spi_0_chip_sel_reg & BCM283X_SPI0_DONE_MASK));
+	/* wait for done flag to be set */
+	while (!(*spi_0_chip_sel_reg & BCM283X_SPI0_DONE_MASK))
+		;
 
 	bcm283x_set_bits(spi_0_chip_sel_reg, 0,
 			BCM283X_SPI0_TA_MASK);
@@ -324,7 +333,7 @@ void bcm283x_spi_read_bytes_polling(uint8_t* buf, uint32_t len)
 
 void bcm283x_gpio_set(uint32_t pin)
 {
-	volatile uint32_t* reg_addr;
+	volatile uint32_t *reg_addr;
 	uint32_t shift;
 
 	reg_addr = bcm283x_gpio_addr + BCM283X_GPSET0_OFFSET/4 + pin/32;
@@ -334,7 +343,7 @@ void bcm283x_gpio_set(uint32_t pin)
 
 void bcm283x_gpio_clr(uint32_t pin)
 {
-	volatile uint32_t* reg_addr;
+	volatile uint32_t *reg_addr;
 	uint32_t shift;
 
 	reg_addr = bcm283x_gpio_addr + BCM283X_GPCLR0_OFFSET/4 + pin/32;
